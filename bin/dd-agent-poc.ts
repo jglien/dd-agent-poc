@@ -2,6 +2,8 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { DdAgentStack } from '../lib/dd-agent-stack';
 
+const envName = process.env.ENV_NAME || 'dev';
+
 const app = new cdk.App();
 new DdAgentStack(app, 'DdAgentStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
@@ -18,5 +20,5 @@ new DdAgentStack(app, 'DdAgentStack', {
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 
-  envName: 'dev',
+  envName,
 });

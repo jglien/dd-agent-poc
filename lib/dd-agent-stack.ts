@@ -4,12 +4,10 @@ import { Vpc, SubnetType, SecurityGroup, Peer, Port } from 'aws-cdk-lib/aws-ec2'
 import {
   Cluster,
   ContainerImage,
-  LogDrivers,
   Protocol,
   FargateService,
   ContainerInsights,
 } from 'aws-cdk-lib/aws-ecs';
-import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import {
   ApplicationLoadBalancer,
   ApplicationTargetGroup,
