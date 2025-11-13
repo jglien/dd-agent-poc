@@ -77,7 +77,22 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const diffOutput = `${{ steps.cdk-diff.outputs.diff_output }}`;
+            const core = require('@actions/core');
+            
+            let diffOutput = 'No changes detected or diff failed to run.';
+            try {
+              if (fs.existsSync('cdk-diff-output.txt')) {
+                diffOutput = fs.readFileSync('cdk-diff-output.txt', 'utf8');
+                if (!diffOutput || diffOutput.trim() === '') {
+                  diffOutput = 'No changes detected.';
+                }
+              }
+            } catch (error) {
+              core.warning(`Failed to read CDK diff output: ${error.message}`);
+            }
+            
+            // Escape backticks in the diff output to prevent markdown issues
+            const escapedOutput = diffOutput.replace(/```/g, '\\`\\`\\`');
             
             const body = `## CDK Diff Output
             
@@ -85,7 +100,7 @@ jobs:
             <summary>Click to expand CDK diff</summary>
             
             \`\`\`
-            ${diffOutput || 'No changes detected or diff failed to run.'}
+            ${escapedOutput}
             \`\`\`
             
             </details>`;
