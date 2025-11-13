@@ -37,6 +37,7 @@ export class DdAgentStack extends Stack {
 
     // 1. VPC
     const vpc = new Vpc(this, 'Vpc', {
+      vpcName: `dd-agent-vpc-${props.envName}`,
       maxAzs: 2,
       subnetConfiguration: [
         { name: 'public', subnetType: SubnetType.PUBLIC, cidrMask: 24 },
@@ -58,7 +59,6 @@ export class DdAgentStack extends Stack {
     // 4. Application (this will look different customer to customer)
     const appAsset = new DockerImageAsset(this, 'AppImageAsset', {
       directory: path.join(__dirname, '..'),
-      platform: Platform.LINUX_ARM64,
     });
     const appContainer = taskDef.addContainer('AppContainer', {
       image: ContainerImage.fromDockerImageAsset(appAsset),
@@ -169,10 +169,6 @@ export class DdAgentStack extends Stack {
     });
     return ecsDatadog.fargateTaskDefinition(this, 'TaskDef', {
       family: `dd-agent-poc-task-${envName}`,
-      runtimePlatform: {
-        cpuArchitecture: CpuArchitecture.ARM64,
-        operatingSystemFamily: OperatingSystemFamily.LINUX,
-      },
     });
   }
 }
