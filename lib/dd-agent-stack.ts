@@ -37,6 +37,7 @@ export class DdAgentStack extends Stack {
 
     // 1. VPC
     const vpc = new Vpc(this, 'Vpc', {
+      vpcName: `dd-agent-vpc-${props.envName}`,
       maxAzs: 2,
       subnetConfiguration: [
         { name: 'public', subnetType: SubnetType.PUBLIC, cidrMask: 24 },
