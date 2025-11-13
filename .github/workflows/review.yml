@@ -77,7 +77,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const core = require('@actions/core');
             
             let diffOutput = 'No changes detected or diff failed to run.';
             try {
