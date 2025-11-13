@@ -1,3 +1,4 @@
+import path from 'path';
 import { Stack, StackProps, CfnOutput, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Vpc, SubnetType, SecurityGroup, Peer, Port } from 'aws-cdk-lib/aws-ec2';
@@ -7,6 +8,8 @@ import {
   Protocol,
   FargateService,
   ContainerInsights,
+  CpuArchitecture,
+  OperatingSystemFamily,
 } from 'aws-cdk-lib/aws-ecs';
 import {
   ApplicationLoadBalancer,
@@ -16,6 +19,7 @@ import {
   TargetType,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { DatadogECSFargate, LoggingType } from 'datadog-cdk-constructs-v2';
 
 export interface DdAgentStackProps extends StackProps {
@@ -50,9 +54,12 @@ export class DdAgentStack extends Stack {
     const taskDef = this.createDatadogTaskDefinition(ddSite, props.envName);
 
     // 4. Application (this will look different customer to customer)
-    const appImage = 'public.ecr.aws/docker/library/nginx:latest';
+    const appAsset = new DockerImageAsset(this, 'AppImageAsset', {
+      directory: path.join(__dirname, '..'),
+      platform: Platform.LINUX_ARM64,
+    });
     const appContainer = taskDef.addContainer('AppContainer', {
-      image: ContainerImage.fromRegistry(appImage),
+      image: ContainerImage.fromDockerImageAsset(appAsset),
       containerName: 'app',
     });
     appContainer.addPortMappings({ containerPort: 80, protocol: Protocol.TCP });
@@ -74,7 +81,13 @@ export class DdAgentStack extends Stack {
       protocol: ApplicationProtocol.HTTP,
       port: 80,
       targetType: TargetType.IP,
-      healthCheck: { path: '/', interval: Duration.seconds(30), timeout: Duration.seconds(5), healthyThresholdCount: 2, unhealthyThresholdCount: 2 },
+      healthCheck: {
+        path: '/health',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 2,
+      },
     });
     service.attachToApplicationTargetGroup(tg);
 
@@ -134,6 +147,10 @@ export class DdAgentStack extends Stack {
     });
     return ecsDatadog.fargateTaskDefinition(this, 'TaskDef', {
       family: `dd-agent-poc-task-${envName}`,
+      runtimePlatform: {
+        cpuArchitecture: CpuArchitecture.ARM64,
+        operatingSystemFamily: OperatingSystemFamily.LINUX,
+      },
     });
   }
 }
