@@ -20,11 +20,14 @@ import { DatadogECSFargate, LoggingType } from 'datadog-cdk-constructs-v2';
 
 export interface DdAgentStackProps extends StackProps {
   envName: string;
+  ddSite?: string;
 }
 
 export class DdAgentStack extends Stack {
   constructor(scope: Construct, id: string, props: DdAgentStackProps) {
     super(scope, id, props);
+
+    const ddSite = props.ddSite || 'datadoghq.com';
 
     // 1. VPC
     const vpc = new Vpc(this, 'Vpc', {
@@ -43,28 +46,8 @@ export class DdAgentStack extends Stack {
       clusterName: `dd-agent-cluster-${props.envName}`,
     });
 
-    // 3. Task Definition with Datadog Agent
-    const ecsDatadog = new DatadogECSFargate({
-      site: "us5.datadoghq.com",
-      apiKeySecret: Secret.fromSecretNameV2(this, 'DatadogApiKeySecret', 'datadog/api-key'),
-      isDatadogDependencyEnabled: true,
-      datadogHealthCheck: {
-        command: ['CMD-SHELL', 'agent health'],
-      },
-      logCollection: {
-        isEnabled: true,
-        loggingType: LoggingType.FLUENTBIT,
-        fluentbitConfig: {
-          logDriverConfig: {
-            hostEndpoint: 'http-intake.logs.us5.datadoghq.com'
-          }
-        },
-      },
-      globalTags: `env:${props.envName},service:dd-agent-poc,version:0.1`,
-    });
-    const taskDef = ecsDatadog.fargateTaskDefinition(this, 'TaskDef', {
-      family: `dd-agent-poc-task-${props.envName}`,
-    });
+    // 3. Create the new Datadog task definition
+    const taskDef = this.createDatadogTaskDefinition(ddSite, props.envName);
 
     // 4. Application (this will look different customer to customer)
     const appImage = 'public.ecr.aws/docker/library/nginx:latest';
@@ -73,7 +56,7 @@ export class DdAgentStack extends Stack {
       containerName: 'app',
     });
     appContainer.addPortMappings({ containerPort: 80, protocol: Protocol.TCP });
-    
+
     // 5. ECS Fargate Service
     const serviceSg = new SecurityGroup(this, 'ServiceSecurityGroup', { vpc, allowAllOutbound: true, description: 'SG for Fargate service' });
     const service = new FargateService(this, 'Service', {
@@ -119,5 +102,38 @@ export class DdAgentStack extends Stack {
     new CfnOutput(this, 'ClusterName', { value: cluster.clusterName });
     new CfnOutput(this, 'ServiceName', { value: service.serviceName });
     new CfnOutput(this, 'VpcId', { value: vpc.vpcId });
+  }
+
+  /**
+   * Create a new Datadog task definition
+   * 
+   * Calling this function will return a read-to-use task definition that
+   * automatically includes Datadog monitoring.
+   * @param ddSite - The Datadog site to use
+   * @param envName - The environment name
+   * @returns The Datadog task definition
+   */
+  private createDatadogTaskDefinition(ddSite: string, envName: string) {
+    const ecsDatadog = new DatadogECSFargate({
+      site: ddSite,
+      apiKeySecret: Secret.fromSecretNameV2(this, 'DatadogApiKeySecret', 'datadog/api-key'),
+      isDatadogDependencyEnabled: true,
+      datadogHealthCheck: {
+        command: ['CMD-SHELL', 'agent health'],
+      },
+      logCollection: {
+        isEnabled: true,
+        loggingType: LoggingType.FLUENTBIT,
+        fluentbitConfig: {
+          logDriverConfig: {
+            hostEndpoint: `http-intake.logs.${ddSite}`
+          }
+        },
+      },
+      globalTags: `env:${envName},service:dd-agent-poc,version:0.1`,
+    });
+    return ecsDatadog.fargateTaskDefinition(this, 'TaskDef', {
+      family: `dd-agent-poc-task-${envName}`,
+    });
   }
 }
