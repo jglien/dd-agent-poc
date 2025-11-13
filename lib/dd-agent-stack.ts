@@ -25,6 +25,8 @@ import { DatadogECSFargate, LoggingType } from 'datadog-cdk-constructs-v2';
 export interface DdAgentStackProps extends StackProps {
   envName: string;
   ddSite?: string;
+  maxTaskCount?: number;
+  targetRequestCountPerTask?: number;
 }
 
 export class DdAgentStack extends Stack {
@@ -61,6 +63,10 @@ export class DdAgentStack extends Stack {
     const appContainer = taskDef.addContainer('AppContainer', {
       image: ContainerImage.fromDockerImageAsset(appAsset),
       containerName: 'app',
+      healthCheck: {
+        command: ['CMD-SHELL', 'curl -f http://localhost/health || exit 1'],
+        startPeriod: Duration.seconds(3),
+      },
     });
     appContainer.addPortMappings({ containerPort: 80, protocol: Protocol.TCP });
 
@@ -108,6 +114,22 @@ export class DdAgentStack extends Stack {
       port: 80,
       protocol: ApplicationProtocol.HTTP,
       defaultAction: ListenerAction.forward([tg]),
+    });
+
+    // 7. Auto Scaling Configuration
+    const maxTaskCount = props.maxTaskCount ?? 10;
+    const targetRequestCountPerTask = props.targetRequestCountPerTask ?? 1000;
+
+    const scalableTarget = service.autoScaleTaskCount({
+      minCapacity: 1,
+      maxCapacity: maxTaskCount,
+    });
+
+    scalableTarget.scaleOnRequestCount('AlbRequestCountScaling', {
+      requestsPerTarget: targetRequestCountPerTask,
+      targetGroup: tg,
+      scaleInCooldown: Duration.seconds(60),
+      scaleOutCooldown: Duration.seconds(60),
     });
 
     // Outputs

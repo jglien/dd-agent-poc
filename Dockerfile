@@ -11,6 +11,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 # Expose port 80 (ALB forwards HTTP here)
 EXPOSE 80
+# Install curl for health checks
+RUN apk add --no-cache curl
 COPY --from=build /app/package.json /app/package-lock.json* ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
