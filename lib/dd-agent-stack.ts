@@ -64,10 +64,10 @@ export class DdAgentStack extends Stack {
     const appContainer = taskDef.addContainer('AppContainer', {
       image: ContainerImage.fromDockerImageAsset(appAsset),
       containerName: 'app',
-      healthCheck: {
-        command: ['CMD-SHELL', 'curl -f http://localhost/health || exit 1'],
-        startPeriod: Duration.seconds(3),
-      },
+      // healthCheck: {
+      //   command: ['CMD-SHELL', 'curl -f http://localhost/health || exit 1'],
+      //   startPeriod: Duration.seconds(3),
+      // },
     });
     appContainer.addPortMappings({ containerPort: 80, protocol: Protocol.TCP });
 
@@ -88,13 +88,13 @@ export class DdAgentStack extends Stack {
       protocol: ApplicationProtocol.HTTP,
       port: 80,
       targetType: TargetType.IP,
-      healthCheck: {
-        path: '/health',
-        interval: Duration.seconds(30),
-        timeout: Duration.seconds(5),
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 2,
-      },
+      // healthCheck: {
+      //   path: '/health',
+      //   interval: Duration.seconds(30),
+      //   timeout: Duration.seconds(5),
+      //   healthyThresholdCount: 2,
+      //   unhealthyThresholdCount: 2,
+      // },
     });
     service.attachToApplicationTargetGroup(tg);
 
