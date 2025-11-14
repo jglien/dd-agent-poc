@@ -11,6 +11,11 @@ on:
         required: false
         default: 'DevTest'
         type: string
+      dd-site:
+        description: 'Datadog site'
+        required: false
+        default: 'us5.datadoghq.com'
+        type: string
 
 jobs:
   deploy:
@@ -19,6 +24,11 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      ENV_NAME: ${{ inputs.environment || 'DevTest' }}
+      DD_SITE: ${{ inputs.dd-site || 'us5.datadoghq.com' }}
+      CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+      CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,9 +52,4 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gh-actions
 
       - name: Deploy CDK stack
-        run: |
-          export ENV_NAME=${{ inputs.environment || 'DevTest' }}
-          export DD_SITE=${DD_SITE:-us5.datadoghq.com}
-          export CDK_DEFAULT_ACCOUNT=${{ secrets.AWS_ACCOUNT_ID }}
-          export CDK_DEFAULT_REGION=${{ secrets.AWS_REGION || 'us-east-1' }}
-          npx cdk deploy --all --require-approval never
+        run: npx cdk deploy --all --require-approval never

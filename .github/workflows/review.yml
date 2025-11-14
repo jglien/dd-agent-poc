@@ -34,6 +34,11 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      ENV_NAME: 'DevTest'
+      DD_SITE: 'us5.datadoghq.com'
+      CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+      CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,9 +64,4 @@ jobs:
       - name: Run CDK diff
         id: cdk-diff
         continue-on-error: true
-        run: |
-          export ENV_NAME=${ENV_NAME:-dev}
-          export DD_SITE=${DD_SITE:-us5.datadoghq.com}
-          export CDK_DEFAULT_ACCOUNT=${{ secrets.AWS_ACCOUNT_ID }}
-          export CDK_DEFAULT_REGION=${{ secrets.AWS_REGION || 'us-east-1' }}
-          npx cdk diff
+        run: npx cdk diff --ci
