@@ -8,8 +8,6 @@ import {
   Protocol,
   FargateService,
   ContainerInsights,
-  CpuArchitecture,
-  OperatingSystemFamily,
 } from 'aws-cdk-lib/aws-ecs';
 import {
   ApplicationLoadBalancer,
@@ -19,7 +17,7 @@ import {
   TargetType,
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
-import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import { DockerImageAsset } from 'aws-cdk-lib/aws-ecr-assets';
 import { DatadogECSFargate, LoggingType } from 'datadog-cdk-constructs-v2';
 
 export interface DdAgentStackProps extends StackProps {

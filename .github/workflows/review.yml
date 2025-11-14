@@ -33,7 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
+      id-token: write
+    env:
+      ENV_NAME: 'DevTest'
+      DD_SITE: 'us5.datadoghq.com'
+      CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+      CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,18 +56,12 @@ jobs:
         run: npm run build
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gh-actions
 
       - name: Run CDK diff
         id: cdk-diff
         continue-on-error: true
-        run: |
-          export ENV_NAME=${ENV_NAME:-dev}
-          export DD_SITE=${DD_SITE:-us5.datadoghq.com}
-          export CDK_DEFAULT_ACCOUNT=${{ secrets.AWS_ACCOUNT_ID }}
-          export CDK_DEFAULT_REGION=${{ secrets.AWS_REGION || 'us-east-1' }}
-          npx cdk diff
+        run: npx cdk diff --ci
