@@ -163,7 +163,7 @@ export class DdAgentStack extends Stack {
           }
         },
       },
-      globalTags: `env:${envName},service:dd-agent-poc,version:0.1`,
+      globalTags: `env:${envName} service:dd-agent-poc version:0.1`,
     });
     return ecsDatadog.fargateTaskDefinition(this, 'TaskDef', {
       family: `dd-agent-poc-task-${envName}`,
